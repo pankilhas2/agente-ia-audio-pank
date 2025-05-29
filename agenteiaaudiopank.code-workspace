@@ -1,0 +1,47 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": ".even"
+		},
+		{
+			"path": ".vercel"
+		},
+		{
+			"path": "dist"
+		},
+		{
+			"path": "node_modules"
+		},
+		{
+			"path": "public"
+		},
+		{
+			"path": "scripts"
+		},
+		{
+			"path": "src"
+		},
+		{
+			"path": "srcsupabaseClient.js"
+		},
+		{
+			"path": "image-reader-module"
+		},
+		{
+			"path": "../agente-ia-audio-pank"
+		},
+		{
+			"path": "../../agente-ia-audio-pankglobal/app"
+		},
+		{
+			"path": "../../agente-ia-audio-pankglobal/pages"
+		},
+		{
+			"path": "../../agente-ia-audio-pankglobal/public"
+		}
+	],
+	"settings": {}
+}

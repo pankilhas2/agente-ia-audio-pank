@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AGENTE IA - ÁUDIO PANK</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+          <button class="action-button" onclick="askTheme('futebol')">
+            <i class="fas fa-futbol"></i>
+            Futebol Brasileiro
+          </button>
+          <button class="action-button" onclick="askTheme('cinema')">
+            <i class="fas fa-tv"></i>
+            Curiosidades da TV
+          </button>
+        </div>
+
+        <div class="chat-container" id="resposta"></div>
+
+        <div class="input-container">
+          <div class="input-wrapper">
+            <input type="text" class="message-input" placeholder="Digite sua mensagem...">
+            <div class="input-buttons">
+              <button class="icon-button">
+                <i class="fas fa-microphone"></i>
+              </button>
+              <a href="https://wa.me/5585992262297" target="_blank" class="whatsapp-button">
+                <i class="fab fa-whatsapp"></i>
+              </a>
+              <button class="icon-button send-button">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      async function askTheme(theme) {
+        try {
+          console.log('Enviando requisição para tema:', theme);
+          
+          const res = await fetch('https://audiopankprodutota-ia.vercel.app/api/ask', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({ theme })
+          });
+          
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          
+          const data = await res.json();
+          console.log('Resposta recebida:', data);
+          
+          if (data.error) {
+            document.getElementById('resposta').innerHTML = '<p style="color: #ff4444;">Erro: ' + data.error + '</p>';
+          } else {
+            document.getElementById('resposta').innerHTML = '<p>' + data.answer + '</p>';
+          }
+        } catch (error) {
+          console.error('Erro:', error);
+          document.getElementById('resposta').innerHTML = '<p style="color: #ff4444;">Erro: ' + error.message + '</p>';
+        }
+      }
+
+      // Evento para enviar mensagem ao pressionar Enter
+      document.querySelector('.message-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          const message = this.value.trim();
+          if (message) {
+            // Aqui você pode adicionar a lógica para enviar a mensagem
+            console.log('Mensagem enviada:', message);
+            this.value = '';
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

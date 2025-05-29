@@ -1,0 +1,326 @@
+- Tabela de mensagens do chat
+CREATE TABLE chat_messages (
+  id BIGSERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Tabela de produtos
+CREATE TABLE products (
+  id BIGSERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  price DECIMAL(10,2) NOT NULL,
+  image_url TEXT,
+  download_url TEXT,
+  category TEXT,
+  featured BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  file_name TEXT,
+  file_size TEXT,
+  download_count INTEGER DEFAULT 0
+);
+
+-- Políticas de segurança (RLS)
+ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+
+-- Políticas para chat_messages
+CREATE POLICY "Users can read their own messages"
+  ON chat_messages FOR SELECT
+  USING (user_id = auth.uid() OR role = 'assistant');
+
+CREATE POLICY "Users can insert their own messages"
+  ON chat_messages FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+
+-- Políticas para products
+CREATE POLICY "Anyone can view products"
+  ON products FOR SELECT
+  USING (true);
+
+CREATE POLICY "Only admins can modify products"
+  ON products FOR ALL
+  USING (auth.role() = 'authenticated' AND auth.email() IN (SELECT email FROM admins));
+
+
+import { useEffect, useState } from 'react'
+import { supabase, ChatMessage, Product } from '../lib/supabase'
+
+export function useSupabase() {
+  const [session, setSession] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  return {
+    session,
+    loading,
+    supabase
+  }
+}
+
+
+# Recriar o painel_admin_perfis.zip conforme solicitado na retomada da sessão
+import os
+from zipfile import ZipFile
+
+painel_admin_dir = "/mnt/data/agenteia_admin_perfis"
+os.makedirs(os.path.join(painel_admin_dir, "app", "admin", "perfis"), exist_ok=True)
+
+# Conteúdo do arquivo page.tsx para o painel de perfis
+admin_perfis_code = """
+'use client';
+
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+
+interface Perfil {
+  id: string;
+  nome: string;
+  email?: string;
+  cidade?: string;
+  telefone?: string;
+  bio?: string;
+  created_at: string;
+}
+
+export default function AdminPerfis() {
+  const [perfis, setPerfis] = useState<Perfil[]>([]);
+  const [filtro, setFiltro] = useState('');
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    async function carregarPerfis() {
+      const { data, error } = await supabase
+        .from('perfis')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setPerfis(data);
+      }
+      setCarregando(false);
+    }
+
+    carregarPerfis();
+  }, []);
+
+  const perfisFiltrados = perfis.filter(p =>
+    p.nome?.toLowerCase().includes(filtro.toLowerCase()) ||
+    p.cidade?.toLowerCase().includes(filtro.toLowerCase())
+  );
+
+  return (
+    <div className="p-4">
+      <h2 className="text-2xl font-bold mb-4">👥 Perfis de Usuários</h2>
+      <input
+        type="text"
+        placeholder="🔍 Filtrar por nome ou cidade"
+        className="mb-4 w-full border p-2 rounded"
+        value={filtro}
+        onChange={(e) => setFiltro(e.target.value)}
+      />
+      {carregando ? (
+        <p>Carregando perfis...</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border">
+            <thead>
+              <tr className="bg-gray-200 text-left">
+                <th className="p-2">Nome</th>
+                <th className="p-2">Cidade</th>
+                <th className="p-2">Telefone</th>
+                <th className="p-2">Bio</th>
+                <th className="p-2">Criado em</th>
+              </tr>
+            </thead>
+            <tbody>
+              {perfisFiltrados.map((perfil) => (
+                <tr key={perfil.id} className="border-t hover:bg-gray-50">
+                  <td className="p-2">{perfil.nome}</td>
+                  <td className="p-2">{perfil.cidade || '-'}</td>
+                  <td className="p-2">{perfil.telefone || '-'}</td>
+                  <td className="p-2">{perfil.bio?.substring(0, 50) || '-'}</td>
+                  <td className="p-2">{new Date(perfil.created_at).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {perfisFiltrados.length === 0 && (
+            <p className="text-gray-600 mt-4">Nenhum perfil encontrado.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+"""
+
+# Caminho do novo arquivo
+admin_path = os.path.join(painel_admin_dir, "app", "admin", "perfis", "page.tsx")
+with open(admin_path, "w", encoding="utf-8") as f:
+    f.write(admin_perfis_code.strip())
+
+# Compactar em ZIP
+zip_admin_path = "/mnt/data/painel_admin_perfis.zip"
+with ZipFile(zip_admin_path, "w") as zipf:
+    for pasta_raiz, _, arquivos in os.walk(painel_admin_dir):
+        for nome_arquivo in arquivos:
+            caminho_arquivo = os.path.join(pasta_raiz, nome_arquivo)
+            arcname = os.path.relpath(caminho_arquivo, painel_admin_dir)
+            zipf.write(caminho_arquivo, arcname)
+
+zip_admin_path
+
+
+export class AudioProcessor {
+  // ... existing code ...
+
+  private options: {
+    noiseReduction: boolean
+    autoEqualizer: boolean
+    silenceDetection: boolean
+    sampleRate?: number
+    bitDepth?: number
+  }
+
+  constructor(options = { 
+    noiseReduction: true, 
+    autoEqualizer: true, 
+    silenceDetection: false,
+    sampleRate: 48000,
+    bitDepth: 16
+  }) {
+    this.options = options
+  }
+
+  async startRecording(): Promise<void> {
+    try {
+      // Configurações de alta qualidade para o microfone
+      this.stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 2,
+          sampleRate: this.options.sampleRate,
+          sampleSize: this.options.bitDepth,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      })
+
+      // ... existing code ...
+
+      // Ajuste fino do compressor para melhor qualidade
+      if (this.options.noiseReduction && this.compressorNode) {
+        this.compressorNode.threshold.value = -24
+        this.compressorNode.knee.value = 20
+        this.compressorNode.ratio.value = 4
+        this.compressorNode.attack.value = 0.005
+        this.compressorNode.release.value = 0.15
+      }
+
+      // Configurar o MediaRecorder com opções de alta qualidade
+      const options = {
+        mimeType: 'audio/webm;codecs=opus',
+        audioBitsPerSecond: 128000
+      }
+
+      this.mediaRecorder = new MediaRecorder(destination.stream, options)
+      // ... existing code ...
+    } catch (error) {
+      console.error("Erro ao iniciar o processamento de áudio:", error)
+      throw error
+    }
+  }
+}
+import { useEffect, useRef } from 'react'
+
+interface AudioVisualizerProps {
+  processor: AudioProcessor
+  width?: number
+  height?: number
+}
+
+export function AudioVisualizer({ processor, width = 300, height = 100 }: AudioVisualizerProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const draw = () => {
+      const data = processor.getVisualizationData()
+      if (!data) return
+
+      ctx.fillStyle = 'rgb(0, 0, 0)'
+      ctx.fillRect(0, 0, width, height)
+
+      const barWidth = (width / data.length) * 2.5
+      let barHeight
+      let x = 0
+
+      for (let i = 0; i < data.length; i++) {
+        barHeight = (data[i] / 255) * height
+
+        const hue = (i / data.length) * 360
+        ctx.fillStyle = `hsl(${hue}, 100%, 50%)`
+        ctx.fillRect(x, height - barHeight, barWidth, barHeight)
+
+        x += barWidth + 1
+      }
+
+      requestAnimationFrame(draw)
+    }
+
+    draw()
+  }, [processor, width, height])
+
+  return <canvas ref={canvasRef} width={width} height={height} />
+}
+
+
+Primeiro, vamos atualizar o AudioProcessor com configurações aprimoradas:
+audio-processor.ts
+Apply
+export class AudioProcessor {  // ... existing code ...  private options: {    noiseReduction: boolean    autoEqualizer: boolean    silenceDetection: boolean    sampleRate?: number    bitDepth?: number    silenceThreshold?: number    silenceDuration?: number  }  constructor(options = {     noiseReduction: true,     autoEqualizer: true,     silenceDetection: true,    sampleRate: 48000,    bitDepth: 24,    silenceThreshold: -45,    silenceDuration: 2000  }) {    this.options = options    this.silenceThreshold = options.silenceThreshold || -45    this.SILENCE_DURATION = options.silenceDuration || 2000  }  // ... existing code ...  async startRecording(): Promise<void> {    try {      this.stream = await navigator.mediaDevices.getUserMedia({        audio: {          channelCount: 2,          sampleRate: this.options.sampleRate,          sampleSize: this.options.bitDepth,          echoCancellation: true,          noiseSuppression: this.options.noiseReduction,          autoGainControl: this.options.autoEqualizer        }      })      this.audioContext = new AudioContext({        sampleRate: this.options.sampleRate,        latencyHint: 'interactive'      })            this.sourceNode = this.audioContext.createMediaStreamSource(this.stream)      // Configurar nós de processamento      if (this.options.noiseReduction) {        // Filtro passa-alta aprimorado        this.filterNode = this.audioContext.createBiquadFilter()        this.filterNode.type = "highpass"        this.filterNode.frequency.value = 80 // Reduzido para preservar mais         graves        this.filterNode.Q.value = 0.7 // Resposta mais suave        this.sourceNode.connect(this.filterNode)        // Compressor otimizado        this.compressorNode = this.audioContext.createDynamicsCompressor()        this.compressorNode.threshold.value = -24        this.compressorNode.knee.value = 20        this.compressorNode.ratio.value = 8        this.compressorNode.attack.value = 0.002        this.compressorNode.release.value = 0.1        this.filterNode.connect(this.compressorNode)        this.gainNode = this.audioContext.createGain()        this.gainNode.gain.value = 1.2 // Ganho mais moderado        this.compressorNode.connect(this.gainNode)      }      // Configurar analyser para visualização e detecção de silêncio      this.analyserNode = this.audioContext.createAnalyser()      this.analyserNode.fftSize = 2048      this.analyserNode.smoothingTimeConstant = 0.8            if (this.gainNode) {        this.gainNode.connect(this.analyserNode)      } else {        this.sourceNode.connect(this.analyserNode)      }      // Iniciar gravação com configurações de alta qualidade      this.mediaRecorder = new MediaRecorder(this.stream, {        mimeType: 'audio/webm;codecs=opus',        audioBitsPerSecond: 128000      })      this.mediaRecorder.ondataavailable = (event) => {        if (event.data.size > 0) {          this.audioChunks.push(event.data)        }      }      this.mediaRecorder.start(100) // Chunks menores para melhor controle      // Iniciar detecção de silêncio      if (this.options.silenceDetection) {        this.silenceDetectionInterval = setInterval(() => this.detectSilence        (), 100)      }    } catch (error) {      console.error('Erro ao iniciar gravação:', error)      throw error    }  }}
+Agora, vamos melhorar o AudioVisualizer com uma visualização mais atraente:
+audio-visualizer.tsx
+Apply
+"use client"import { useEffect, useRef } from 'react'interface AudioVisualizerProps {  processor: AudioProcessor  width?: number  height?: number  barColor?: string  backgroundColor?: string}export function AudioVisualizer({   processor,   width = 300,   height = 100,  barColor = 'gradient',  backgroundColor = 'rgba(0, 0, 0, 0.8)'}: AudioVisualizerProps) {  const canvasRef = useRef<HTMLCanvasElement>(null)  useEffect(() => {    const canvas = canvasRef.current    if (!canvas) return    const ctx = canvas.getContext('2d')    if (!ctx) return    const draw = () => {      const data = processor.getVisualizationData()      if (!data) return      // Limpar canvas com efeito de fade      ctx.fillStyle = backgroundColor      ctx.fillRect(0, 0, width, height)      const barWidth = (width / data.length) * 2.5      let barHeight      let x = 0      // Criar gradiente      const gradient = ctx.createLinearGradient(0, height, 0, 0)      gradient.addColorStop(0, '#4CAF50')   // Verde na base      gradient.addColorStop(0.5, '#FFC107') // Amarelo no meio      gradient.addColorStop(1, '#F44336')   // Vermelho no topo      for (let i = 0; i < data.length; i++) {        barHeight = (data[i] / 255) * height        // Aplicar efeito de suavização        const smoothHeight = barHeight * 0.95        if (barColor === 'gradient') {          ctx.fillStyle = gradient        } else {          ctx.fillStyle = barColor        }        // Desenhar barra com cantos arredondados        ctx.beginPath()        ctx.roundRect(x, height - smoothHeight, barWidth, smoothHeight, 3)        ctx.fill()        x += barWidth + 1      }      requestAnimationFrame(draw)    }    draw()    return () => {      // Cleanup      ctx.clearRect(0, 0, width, height)    }  }, [processor, width, height, barColor, backgroundColor])  return (    <canvas       ref={canvasRef}       width={width}       height={height}       style={{         borderRadius: '8px',        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'      }}     />  )}
+As principais melhorias incluem:
+
+No AudioProcessor:
+Configurações de áudio de alta qualidade (48kHz, 24-bit)
+Detecção de silêncio configurável
+Compressor otimizado para melhor dinâmica
+Filtro passa-alta mais suave
+Controle de ganho mais moderado
+No AudioVisualizer:
+Gradiente de cores personalizável
+Efeito de suavização nas barras
+Cantos arredondados
+Sombra e estilo visual aprimorado
+Limpeza adequada do canvas
+Para usar essas melhorias, você pode instanciar o AudioProcessor com as novas opções:
+
+typescript
+
+const processor = new AudioProcessor({  noiseReduction: true,  autoEqualizer: true,  silenceDetection: true,  sampleRate: 48000,  bitDepth: 24,  silenceThreshold: -45,  silenceDuration: 2000})// E usar o visualizador com as novas opções<AudioVisualizer   processor={processor}  width={500}  height={150}  barColor="gradient"  backgroundColor="rgba(0, 0, 0, 0.8)"/>
+Estas alterações devem proporcionar uma melhor qualidade de áudio e uma experiência visual mais agradável para os usuários.

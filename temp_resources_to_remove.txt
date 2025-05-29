@@ -1,0 +1,25 @@
+# Recursos temporariamente removidos para otimizar o build
+
+# Diretórios
+- /admin/ (área administrativa)
+- /chat/ (chat)
+- /estatisticas/ (estatísticas)
+- /groq/ (integração com Groq)
+- /historico/ (histórico)
+- /meus-conteudos/ (gerenciamento de conteúdos)
+- /midias/ (mídia)
+- /offline/ (funcionalidade offline)
+- /payment/ (pagamentos)
+- /planos/ (planos)
+- /recomendacoes/ (recomendações)
+- /remocao-ia/ (remoção de IA)
+- /speech/ (speech)
+- /video-criador/ (criador de vídeos)
+- /vip/ (área VIP)
+
+# Arquivos
+- pwa.tsx (Progressive Web App)
+- sw.ts (Service Worker)
+- manifest.ts (Manifest)
+
+# Estes recursos podem ser restaurados após a otimização do build
